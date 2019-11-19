@@ -7,10 +7,6 @@ Catana
         :target: https://travis-ci.org/catana-research/catana
 
 
-.. .. image:: https://readthedocs.org/projects/catana/badge/?version=latest
-        :target: https://catana.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
 
 
 
