@@ -10,7 +10,7 @@ script:
   - flake8 catana --statistics --show-source
   - pytest --cov=catana/
   - make -C docs html
-  - make -C docs linkcheck
+  #- make -C docs linkcheck
 
 after_success:
     - coveralls
