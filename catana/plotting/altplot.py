@@ -4,8 +4,10 @@
 Provides wrapper functionality to easily utilise altair plots.
 """
 
+
 def f():
     return 1
+
 
 def main():
     return
