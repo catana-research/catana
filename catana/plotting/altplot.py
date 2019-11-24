@@ -34,35 +34,38 @@ def scatter(data=None, x=None, y=None, color=None, interactive=False):
         Additional keywords will be used to customise the underlying Altair/Vega-Lite plot instance.
     """
     chart = alt.Chart(data).mark_circle(size=10).encode(
-        x=f'{x}:Q',
-        y=f'{y}:Q',
-        color=f'{color}:N',
-        #tooltip=['charge', 'm']
+        x=x,
+        y=y,
+        color=color,
     )
 
     return _customise(chart, interactive=interactive)
 
-def line(data, x, y, color=None, line_width=2):
 
+def line(data, x, y, color=None, line_width=2):
     chart = alt.Chart(data).mark_line(size=line_width).encode(
-        x=f'{x}',
-        y=f'{y}',
+        x=x,
+        y=y,
         color=color,
         )
+
     return _customise(chart, interactive=False)
+
 
 def histogram(data, x, bins=30, color=None):
     chart = alt.Chart(data).mark_bar().encode(
-        x=f'{x}:Q',
-        y=f'{y}:Q',
-        color=f'{color}:N',
-        #tooltip=['charge', 'm']
-    )#.interactive()
-    return chart
+        x=x,
+        bins=bins,
+        color=color,
+        )
+
+    return _customise(chart, interactive=False)
 
 
-def histogram2d(data, x, bins=30, color=None):
-    return chart
+def histogram2d(data, x, bins=30, color=None, interactive=False):
+    chart = None
+    return _customise(chart, interactive=False)
+
 
 def table(data, columns, labels=None, max_rows=10):
 
@@ -84,7 +87,7 @@ def table(data, columns, labels=None, max_rows=10):
     return table
 
 
-def facet(data, rows, columns, color=None, width=200, height=200):
+def facet(data, rows, columns, color=None, width=200, height=200, interactive=True):
     # TODO: make the type of chart configurable
     chart = alt.Chart(data).mark_circle().encode(
         alt.X(alt.repeat("column"), type='quantitative'),
@@ -93,11 +96,13 @@ def facet(data, rows, columns, color=None, width=200, height=200):
     ).properties(
         width=width,
         height=height
-    ).repeat(  # <<< Specify rows and columns to repeat
+    ).repeat(
         row=rows,
         column=columns
-    ).interactive()
-    return chart
+    )
+
+    return _customise(chart, interactive=False)
+
 
 def legend2d(data, color=None):
     legend = alt.Chart(data).mark_rect().encode(
