@@ -23,13 +23,16 @@ from copy import copy
 import numpy as np
 
 from catana.plotting import altplot
+from catana.plotting import constants
 
 class AltChart(object):
 
-    def __init__(self, data=None, size=None):
+    def __init__(self, data=None, size=None, meta=''):
         self.data = data
         self._base_plot = alt.Chart(self.data).mark_point()
         self.plot_grid = np.full(size, self._base_plot) if size else [[self._base_plot]]
+        self._selections = []
+        self.meta = meta
 
     def _combine_plots(self):
         row_plots = []
@@ -53,11 +56,34 @@ class AltChart(object):
         # Process kwargs
         kwargs['data'] = kwargs.get('data', self.data)
         pos = kwargs.pop('pos') if 'pos' in kwargs.keys() else (0, 0)  # TODO: Remove magic (0, 0)
+        brush = kwargs.pop('brush') if 'brush' in kwargs.keys() else None
+        selection = kwargs.pop('selection') if 'selection' in kwargs.keys() else None
+        meta = kwargs.pop('meta') if 'meta' in kwargs.keys() else None  # TODO: Store this with the plot object or a tooltip
+
+        if brush:
+            kwargs['interactive'] = False
 
         obj = copy(self)
         plot = plot_function(**kwargs)
+        if selection:
+            plot = self._add_selection(plot, selection)
         self._plot_grid_cell(obj, pos, plot)  # TODO: This needs to be handled more elegantly by a chart class
         return obj
+
+    # TODO: Apply selection on Tables before other selections are applied or apply max_row selection at end
+    def _add_selection(self, plot, selection):
+        # TODO: MAKE THIS WORK FOR EVERY PLOT TYPE (INCLUDING TABLE, FACET)
+        background = plot.encode(opacity=alt.value(constants.DESELECTED_OPACITY)).add_selection(selection)
+        highlight = plot.transform_filter(selection)
+        plot = alt.layer(
+            background,
+            highlight,
+        )
+        # else:
+        #     plot = plot.add_selection(selection)
+        self._selections.append(selection)
+
+        return plot
 
     # def add_plot(self, plot):
     #     """Add one or more selections to the chart."""
@@ -107,6 +133,18 @@ class AltChart(object):
     @alt.utils.use_signature(altplot.line)
     def line(self, **kwargs):
         return self._add_plot(altplot.line, **kwargs)
+
+    @alt.utils.use_signature(altplot.histogram)
+    def histogram(self, **kwargs):
+        return self._add_plot(altplot.histogram, **kwargs)
+
+    @alt.utils.use_signature(altplot.histogram2d)
+    def histogram2d(self, **kwargs):
+        return self._add_plot(altplot.histogram2d, **kwargs)
+
+    @alt.utils.use_signature(altplot.pie)
+    def pie(self, **kwargs):
+        return self._add_plot(altplot.pie, **kwargs)
 
     @alt.utils.use_signature(altplot.table)
     def table(self, **kwargs):
