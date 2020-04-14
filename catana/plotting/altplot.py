@@ -11,6 +11,7 @@ https://altair-viz.github.io/user_guide/generated/toplevel/altair.Chart.html#>`_
 
 """
 import altair as alt
+import numpy as np
 
 
 def _customise(chart, interactive=False, title=None, color=None):
@@ -47,25 +48,38 @@ def scatter(data=None, x=None, y=None, color=None, title=None, interactive=False
     return _customise(chart, interactive=interactive, title=title)
 
 
-def line(data, x, y, color=None, line_width=2, title=None, interactive=False):
+def line(data, x, y, color=None, line_width=2, title=None, interactive=False, ci_y=None):
+
+    kwargs = {}
+    if color:
+        kwargs['color'] = color
+
     chart = alt.Chart(data).mark_line(size=line_width).encode(
         x=x,
         y=y,
-        color=color,
+        **kwargs
         )
+    if ci_y:
+        ci = alt.Chart(data).mark_area(opacity=0.3).encode(
+            x=x,
+            y='ci0({})'.format(ci_y),  # ci0 - Lower CI
+            y2='ci1({})'.format(ci_y),  # ci1 - Upper CI
+            **kwargs
+        )
+        chart = alt.layer(ci, chart)
 
     return _customise(chart, interactive=interactive, title=title)
 
 
-def histogram(data, x, bins=30, color=None, title=None, interactive=False, stack=True, fill=True):
+def histogram(data, x, bins=30, color=None, title=None, interactive=False, stack=True, fill=True, alpha=1):
     bins = alt.Bin(maxbins=bins)
     if fill:
-        chart = alt.Chart(data).mark_bar().encode(
+        chart = alt.Chart(data).mark_bar(opacity=alpha).encode(
             x=alt.X(x, bin=bins),
             y=alt.Y('count()', stack=stack),
             )
     else:
-        chart = alt.Chart(data).mark_line(interpolate='step-after').encode(
+        chart = alt.Chart(data).mark_line(interpolate='step-after', opacity=alpha).encode(
             x=alt.X(x, bin=bins),
             y=alt.Y('count()', stack=stack),
         )
@@ -152,7 +166,47 @@ def table(data, columns, labels=None, max_rows=10, filter=None):
     return table
 
 
+def pairgrid(data, variables, color=None, title=None, width=200, height=200, upper='scatter', diag='hist', lower='scatter',
+             interactive=False, stack=True, alpha=0.3):
+    """Plot pair-wise relationship of input variables
+
+    Or copy this:
+    https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.plotting.scatter_matrix.html
+
+    Example:
+    https://seaborn.pydata.org/tutorial/axis_grids.html#plotting-pairwise-data-relationships
+    """
+    size = len(variables)
+    grid = np.full((size, size), None)
+
+
+    for i, variable_1 in enumerate(variables):
+        for j in range(i, size):
+            variable_2 = variables[j]
+
+            if i == j:
+                # Diagonal plots
+                grid[i, i] = histogram(data, variable_1, color=color, stack=stack, alpha=alpha)
+            else:
+                # Off-diagonal plots
+                grid[j, i] = scatter(data, x=variable_1, y=variable_2, color=color)
+                grid[i, j] = scatter(data, x=variable_2, y=variable_1, color=color)
+
+    row_plots = []
+    for row in grid:
+        row_plots.append(alt.hconcat(*row))
+    joined_plots = alt.vconcat(*row_plots)
+    return joined_plots
+
 def facet(data, rows, columns, color=None, title=None, width=200, height=200, interactive=False):
+    """
+
+    TODO: RENAME THIS REPEATGRID OR PAIRGRID, A FACET HAS THE SAME AXIS BUT DIFFERENT SELECTIONS PER PLOT
+
+    RepeatGrid are limited, not sure how to implement selections
+
+    :return:
+    """
     # TODO: make the type of chart configurable
     chart = alt.Chart(data).mark_circle().encode(
         alt.X(alt.repeat("column"), type='quantitative'),

@@ -25,6 +25,7 @@ import numpy as np
 from catana.plotting import altplot
 from catana.plotting import constants
 
+
 class AltChart(object):
 
     def __init__(self, data=None, size=None, meta=''):
@@ -73,14 +74,19 @@ class AltChart(object):
     # TODO: Apply selection on Tables before other selections are applied or apply max_row selection at end
     def _add_selection(self, plot, selection):
         # TODO: MAKE THIS WORK FOR EVERY PLOT TYPE (INCLUDING TABLE, FACET)
-        background = plot.encode(opacity=alt.value(constants.DESELECTED_OPACITY)).add_selection(selection)
-        highlight = plot.transform_filter(selection)
-        plot = alt.layer(
-            background,
-            highlight,
-        )
-        # else:
-        #     plot = plot.add_selection(selection)
+        if str(type(plot)).find('RepeatChart') > -1:
+            plot = plot.add_selection(selection).transform_filter(selection)
+        elif str(type(plot)).find('ConcatChart') > -1:
+            plot = plot.add_selection(selection).transform_filter(selection)
+        else:
+            background = plot.encode(opacity=alt.value(constants.DESELECTED_OPACITY)).add_selection(selection)
+            highlight = plot.transform_filter(selection)
+            plot = alt.layer(
+                background,
+                highlight,
+            )
+            # else:
+            #     plot = plot.add_selection(selection)
         self._selections.append(selection)
 
         return plot
@@ -149,6 +155,10 @@ class AltChart(object):
     @alt.utils.use_signature(altplot.table)
     def table(self, **kwargs):
         return self._add_plot(altplot.table, **kwargs)
+
+    @alt.utils.use_signature(altplot.pairgrid)
+    def pairgrid(self, **kwargs):
+        return self._add_plot(altplot.pairgrid, **kwargs)
 
     @alt.utils.use_signature(altplot.facet)
     def facet(self, **kwargs):
