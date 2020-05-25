@@ -18,7 +18,7 @@ class Timer(object):
     t.elapsed()
 
     """
-    def __init__(self, log_name=__name__, log_level=logging.INFO, verbose=True, precision=4):
+    def __init__(self, log_name=__name__, log_level=logging.INFO, verbose=True, precision=3):
         self.log_name = log_name
         self.log_level = log_level
         self.verbose = verbose
@@ -31,10 +31,26 @@ class Timer(object):
     def __exit__(self, *args):
         self.end = time.clock()
         self._elapsed = self.end - self.start
-        message = f'Time elapsed = {self._elapsed:.{self.precision}f}'
+
+        message = self._message(self._elapsed)
         self._log(message)
         if self.verbose:
             print(message)
+
+    def _message(self, elapsed):
+        suffix = ''
+        factor = 1
+        if elapsed < 1e-7:
+            suffix = ' ns'
+            factor = 1e9
+        elif elapsed < 1e-4:
+            suffix = ' μs'
+            factor = 1e6
+        elif elapsed < 1e-1:
+            suffix = ' ms'
+            factor = 1e3
+
+        return f'Time elapsed = {elapsed * factor:.{self.precision}f}{suffix}'
 
     def _log(self, message):
         logger = logging.getLogger(self.log_name)
