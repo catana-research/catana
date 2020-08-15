@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 """
 AltChart
 --------
 
-Provides wrapper functionality to easily utilise altair plots.
+API wrapper to utilise template altair plots.
 
 Data types:
 
@@ -27,7 +26,9 @@ from catana.plotting import constants
 
 
 class AltChart(object):
+    """Base chart object
 
+    """
     def __init__(self, data=None, size=None, meta=''):
         self.data = data
         self._base_plot = alt.Chart(self.data).mark_point()
@@ -105,10 +106,10 @@ class AltChart(object):
 
     """Alternatively we can setup link seaborn:
     https://github.com/mwaskom/seaborn/blob/09e7d61eaeed932c743976c877df2edd321a6c05/seaborn/categorical.py#L2221
-    
+
     1. Define a base class for each plot type
-    2. explicitly define all the args in the function definition    
-    
+    2. explicitly define all the args in the function definition
+
     def boxplot(x=None, y=None, hue=None, data=None, order=None, hue_order=None,
             orient=None, color=None, palette=None, saturation=.75,
             width=.8, dodge=True, fliersize=5, linewidth=None,
@@ -128,7 +129,15 @@ class AltChart(object):
     """
 
     def plot(self, kind='scatter', **kwargs):
-        """Plot a chart of the specified name, defaults to scatter plot."""
+        """Create a chart of the specified type, defaults to scatter plot.
+
+        Args:
+            kind:
+            **kwargs:
+
+        Returns:
+
+        """
         plot_function = getattr(self, kind)
         return self._add_plot(plot_function, **kwargs)
 

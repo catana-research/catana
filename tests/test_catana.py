@@ -24,4 +24,5 @@ def test_content(response):
     # assert 'GitHub' in BeautifulSoup(response.content).title.string
 
 
-def test_mock()
+def test_mock():
+    pass

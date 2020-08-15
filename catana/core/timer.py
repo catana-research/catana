@@ -37,8 +37,8 @@ class Timer(object):
         if self.verbose:
             print(message)
 
-    def _message(self, elapsed):
-        suffix = ''
+    def _get_scientific_time(self, elapsed):
+        suffix = ' s'
         factor = 1
         if elapsed < 1e-7:
             suffix = ' ns'
@@ -49,10 +49,14 @@ class Timer(object):
         elif elapsed < 1e-1:
             suffix = ' ms'
             factor = 1e3
+        return f'{elapsed * factor:.{self.precision}f}{suffix}'
 
-        return f'Time elapsed = {elapsed * factor:.{self.precision}f}{suffix}'
+    def _message(self, elapsed):
+        scientific_elapsed = self._get_scientific_time(elapsed)
+        return f'{self.log_name}: {scientific_elapsed}'
 
     def _log(self, message):
+        logging.basicConfig(format='%(asctime)s %(message)s')
         logger = logging.getLogger(self.log_name)
         logger.log(self.log_level, message)
 

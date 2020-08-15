@@ -21,3 +21,12 @@ Features
 --------
 
 * TODO
+
+Building documentation
+----------------------
+
+Locally:
+```
+cd docs
+make html
+```

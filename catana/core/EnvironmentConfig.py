@@ -53,4 +53,5 @@ class EnvironmentConfig(object):
         self._env = project
         self._environments = dict()
 
-        for tag, e in environments.items()
+        for tag, e in environments.items():
+            pass

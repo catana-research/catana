@@ -74,10 +74,16 @@ def interpolate_chebyshev_tensor(poly, grid, evaluation_vector):
         >>>     return np.cos(0.5 * np.pi * x) * np.sin(0.5 * np.pi * y) * np.sin(0.5 * np.pi * z)
 
     """
+    # TODO: Investigate https://www.boost.org/doc/libs/1_65_0/libs/math/doc/html/math_toolkit/interpolate/barycentric.html
     # TODO: Check evaluation_vector lies inside the grid otherwise throw exception
+    # TODO: Add dask delayed
+    import cProfile
+    profile = cProfile.Profile()
+
+    profile.enable()
 
     # Get current point (z) and reduced grid (2d)
-    eval_point = evaluation_vector[-1]
+    eval_point = evaluation_vector[-1:]
     eval_vector = evaluation_vector[:-1]
     grid_current = np.array(grid)
     poly_current = poly.reshape(-1)
@@ -85,22 +91,36 @@ def interpolate_chebyshev_tensor(poly, grid, evaluation_vector):
     dimensions = len(eval_vector)
 
     for d in range(dimensions):
-        value_point = np.array([p(eval_point) for p in poly_current])
-        value_point = value_point.reshape(-1, grid_current[-1].shape[-1])
+        # TODO: Investigate possibility of changing yi (set_yi) instead of creating a new object
+        # TODO: Stop using grid_current[-1]
+
+        #value_point = np.array([p(eval_point) for p in poly_current]) # 5ms per call - 0.2 ms per evaluation
+        value_point = np.array([p._evaluate(eval_point) for p in poly_current])  # 2.4 ms per call - 0.1 ms per evaluation
+        #np.vectorize(p._evaluate)(eval_point) for p in poly_current])
+        value_point = value_point.reshape(-1, grid_current[-1].shape[-1])  # 10 μs
 
         poly_current = []
-        for value in value_point:
+        poly_new = BarycentricInterpolator(grid_current[-1], value_point[0])
+        for value in value_point:  # 0.2 ms per constructor call
             poly_current.append(BarycentricInterpolator(grid_current[-1], value))
+            # TODO: Investigate possibiility of changing yi (set_yi) instead of creating a new object
+            # poly_new.set_yi(value_point[1])  # Both take ~0.250 ms
+            # poly_new(eval_point)
 
         grid_current = grid_current[:-1]
 
         # 2nd iteration
         if eval_vector.shape[0] == 1:  # terminate
             eval_point = eval_vector
-            value = poly_current[0](eval_point)[0]  # Final value
+            #value = poly_current[0](eval_point)[0]  # Final value
+            value = poly_current[0]._evaluate(eval_point)[0][0]  # Final value
         else:
             eval_point = eval_vector[-1]
             eval_vector = eval_vector[:-1]
+
+    profile.disable()
+    profile.print_stats(sort='cumtime')
+
 
     return value
 
@@ -128,13 +148,15 @@ if __name__ == '__main__':
 
     # Evaluate a single points
     from catana.core.timer import Timer
+
+
     with Timer() as t:
         value = interpolate_chebyshev_tensor(poly, grid, eval_col[0])
 
     print(value, t.elapsed())
 
-    # Evaluate across a grid of points
-    values = np.array([interpolate_chebyshev_tensor(poly, grid, eval_vector) for eval_vector in eval_col])
-    values_true = np.array([f(*eval_vector) for eval_vector in eval_col])
-    error = np.abs(values - values_true)
-    print("Max error = ", np.max(error))
+    # # Evaluate across a grid of points
+    # values = np.array([interpolate_chebyshev_tensor(poly, grid, eval_vector) for eval_vector in eval_col])
+    # values_true = np.array([f(*eval_vector) for eval_vector in eval_col])
+    # error = np.abs(values - values_true)
+    # print("Max error = ", np.max(error))
